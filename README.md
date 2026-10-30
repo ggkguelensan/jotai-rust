@@ -5,6 +5,24 @@ An experimental, synchronous Rust adaptation of the atomic state model in
 [jotai-holo](https://github.com/ggkguelensan/jotai-holo).
 This is an initial implementation, not API or behavior parity with either library.
 
+## Documentation · Документация
+
+Русскоязычный сайт: руководства, API, рецепты и встроенное Rust/WASM-демо.
+Начните с [быстрого старта](docs/guide/getting-started.md),
+[справочника API](docs/reference/atoms.md) или
+[соответствия TypeScript-версии](docs/guide/migration.md).
+
+```sh
+export PATH="$HOME/.cargo/bin:$PATH"
+npm ci
+npm run docs:dev
+```
+
+Open the URL printed by VitePress. Rust, the WASM target and Trunk must be installed
+as described below. `npm run docs:build` creates a static site including the
+working Yew example; `npm run docs:check` runs the Markdown examples as doctests.
+See [documentation build and testing](docs/guide/testing.md).
+
 ```text
 crates/jotai             atoms → store-local dependency graph → subscriptions
 crates/jotai-holo        projections, actions, events → owned bonds

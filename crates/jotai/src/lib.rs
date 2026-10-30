@@ -1,4 +1,7 @@
 //! Single-threaded atoms with store-local values, lazy derived reads and RAII subscriptions.
+#[cfg(doctest)]
+mod documentation;
+
 use std::{
     any::Any,
     cell::RefCell,

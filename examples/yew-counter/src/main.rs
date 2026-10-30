@@ -3,6 +3,7 @@ use jotai_holo::{Action, Bond, Event, prism, state_atom};
 use jotai_holo_yew::{Holo, use_holo};
 use yew::prelude::*;
 
+// #region counter-model
 struct CounterModel {
     count: WritableAtom<i32>,
     doubled: Atom<i32>,
@@ -44,6 +45,9 @@ impl CounterModel {
     }
 }
 
+// #endregion counter-model
+
+// #region counter-view
 // This View imports no model, atom, store or holo hook.
 #[derive(Clone, PartialEq, Properties)]
 struct CounterProps {
@@ -61,6 +65,9 @@ fn CounterView(props: &CounterProps) -> Html {
     }
 }
 
+// #endregion counter-view
+
+// #region counter-connected
 #[derive(Clone, PartialEq, Properties)]
 struct ConnectedProps {
     binding: Holo<CounterProps>,
@@ -71,6 +78,8 @@ fn ConnectedCounter(props: &ConnectedProps) -> Html {
     let view_props = use_holo(props.binding.clone(), props.store.clone());
     html! { <CounterView ..view_props /> }
 }
+
+// #endregion counter-connected
 
 #[derive(Clone, PartialEq, Properties)]
 struct DerivedProps {
@@ -126,11 +135,13 @@ fn StorePanel(props: &PanelProps) -> Html {
     let connected = use_state(|| true);
     let visible = use_state(|| true);
     let status = *connected;
+    // #region counter-ownership
     let model = props.model.clone();
     use_effect_with((store.clone(), status), move |(store, active)| {
         let lease = active.then(|| model.0.route.connect(store));
         move || drop(lease)
     });
+    // #endregion counter-ownership
     let toggle_view = {
         let visible = visible.clone();
         Callback::from(move |_| visible.set(!*visible))

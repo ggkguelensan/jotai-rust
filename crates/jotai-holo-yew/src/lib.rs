@@ -1,4 +1,7 @@
 //! Typed declarative bindings. Views receive ordinary Yew props, with no atom knowledge.
+#[cfg(doctest)]
+mod documentation;
+
 use jotai::{Atom, Store, Subscription};
 use jotai_holo::Action;
 use std::rc::Rc;

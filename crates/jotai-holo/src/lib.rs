@@ -1,4 +1,7 @@
 //! Framework-independent model primitives inspired by jotai-holo.
+#[cfg(doctest)]
+mod documentation;
+
 pub use jotai::{
     Atom, Event, ReadContext, Store, Subscription, WritableAtom, atom as state_atom, derived,
 };
