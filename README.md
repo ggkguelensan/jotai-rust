@@ -11,6 +11,8 @@ This is an initial implementation, not API or behavior parity with either librar
 Начните с [быстрого старта](docs/guide/getting-started.md),
 [справочника API](docs/reference/atoms.md) или
 [соответствия TypeScript-версии](docs/guide/migration.md).
+Есть [Excel-подобная таблица](docs/examples/spreadsheet.md) с формулами,
+листами, клавиатурным редактированием и локальным сохранением.
 
 ```sh
 export PATH="$HOME/.cargo/bin:$PATH"

@@ -948,6 +948,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "yew-spreadsheet"
+version = "0.1.0"
+dependencies = [
+ "gloo-events",
+ "gloo-timers",
+ "jotai",
+ "jotai-holo",
+ "jotai-holo-yew",
+ "serde",
+ "serde_json",
+ "web-sys",
+ "yew",
+]
+
+[[package]]
 name = "zmij"
 version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"

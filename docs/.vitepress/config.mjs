@@ -37,6 +37,7 @@ export default defineConfig({
         { text: 'Holo, Binding, use_holo', link: '/reference/holo' },
       ] },
       { text: 'Примеры и рецепты', items: [
+        { text: 'Excel-подобная таблица', link: '/examples/spreadsheet' },
         { text: 'Живой счётчик', link: '/examples/counter' },
         { text: 'Корзина', link: '/recipes/cart' },
         { text: 'Редактор профиля', link: '/recipes/profile' },

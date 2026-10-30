@@ -1,0 +1,17 @@
+[package]
+name = "yew-spreadsheet"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+jotai.workspace = true
+jotai-holo.workspace = true
+jotai-holo-yew.workspace = true
+yew.workspace = true
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+gloo-timers = "0.3"
+gloo-events = "0.2"
+web-sys = { version = "0.3", features = ["Window", "Storage", "HtmlInputElement", "KeyboardEvent", "FocusOptions"] }
