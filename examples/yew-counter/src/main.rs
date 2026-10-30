@@ -1,5 +1,5 @@
 use jotai::{Atom, Store, WritableAtom};
-use jotai_holo::{Action, Bond, Event, prism, state_atom};
+use jotai_holo::{Action, Bond, Event, ion, state_atom};
 use jotai_holo_yew::{Holo, use_holo};
 use yew::prelude::*;
 
@@ -15,8 +15,8 @@ struct CounterModel {
 impl CounterModel {
     fn new() -> Self {
         let count = state_atom(0);
-        let doubled = prism(&count, |n| n * 2);
-        let parity = prism(&count, |n| if n % 2 == 0 { "even" } else { "odd" });
+        let doubled = ion(&count, |n| n * 2);
+        let parity = ion(&count, |n| if n % 2 == 0 { "even" } else { "odd" });
         let requested = Event::new();
         let increment = {
             let requested = requested.clone();
