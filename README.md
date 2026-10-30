@@ -134,6 +134,10 @@ returned by actions as ordinary values, but are neither executed nor managed.
 
 ## Validation
 
+For the production React/TypeScript versus Rust/WASM spreadsheet comparison,
+see [results](benchmarks/spreadsheet/RESULTS.md) and
+[methodology and reproduction](benchmarks/spreadsheet/README.md).
+
 From the workspace root:
 
 ```sh

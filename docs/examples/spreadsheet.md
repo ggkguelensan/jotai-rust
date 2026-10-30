@@ -127,6 +127,11 @@ IndexedDB. Формулы, листы, выбор и окно восстанав
 
 ## Запуск и исходники
 
+Production-сравнение этого примера с React/TypeScript-версией на тех же CSV
+опубликовано в [отчёте с медианами, p95 и сырыми замерами](https://github.com/ggkguelensan/jotai-rust/blob/main/benchmarks/spreadsheet/RESULTS.md).
+Это сравнение приложений с разными стратегиями загрузки и сохранения;
+методика и команды воспроизведения находятся рядом с отчётом.
+
 ```sh
 export PATH="$HOME/.cargo/bin:$PATH"
 cd examples/yew-spreadsheet
