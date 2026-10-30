@@ -99,7 +99,7 @@ test('sheets commit drafts, preserve cameras, rename, add and restore locally', 
   await expect(cell(app, 'AA90')).toHaveValue('42');
   await go(app, 'A1'); await expect(cell(app, 'A1')).toHaveValue('5');
   await app.getByRole('button', { name: 'Добавить лист' }).click();
-  await expect(app.getByRole('button', { name: 'Лист 3', exact: true })).toHaveAttribute('aria-current', 'page');
+  await expect(app.getByRole('button', { name: 'Лист 5', exact: true })).toHaveAttribute('aria-current', 'page');
   await expect(cell(app, 'A1')).toHaveValue('');
   await edit(app, 'A1', '9');
   await app.getByRole('button', { name: 'Сбросить лист' }).click();
@@ -137,5 +137,59 @@ test('storage failure preserves edits and retry writes the current workbook', as
   await page.reload();
   await expect(cell(app, 'B1')).toHaveValue('20');
   await expect(cell(app, 'D5')).toHaveValue('4840');
+  expect(errors).toEqual([]);
+});
+
+test('full CSV datasets have separate sheets, preserve last rows and survive edit/reload/reset', async ({ page }) => {
+  const { app, errors } = await open(page);
+  await expect(app.getByRole('button', { name: 'Penguins', exact: true })).toHaveCount(1);
+  await expect(app.getByRole('button', { name: 'Titanic', exact: true })).toHaveCount(1);
+  await app.getByRole('button', { name: 'Penguins', exact: true }).click();
+  await expect(app.getByRole('heading', { level: 1 })).toHaveText('Penguins');
+  await expect(cell(app, 'A1')).toHaveValue('species');
+  await expect(app.getByRole('spinbutton', { name: 'Число строк' })).toHaveValue('345');
+  await expect(app.getByRole('spinbutton', { name: 'Число столбцов' })).toHaveValue('8');
+  await go(app, 'H345'); await expect(cell(app, 'H345')).toHaveValue('2009');
+  await go(app, 'C2'); await edit(app, 'C2', '55');
+
+  await app.getByRole('button', { name: 'Titanic', exact: true }).click();
+  await expect(cell(app, 'A1')).toHaveValue('survived');
+  await expect(app.getByRole('spinbutton', { name: 'Число строк' })).toHaveValue('892');
+  await expect(app.getByRole('spinbutton', { name: 'Число столбцов' })).toHaveValue('15');
+  await go(app, 'L2'); await expect(cell(app, 'L2')).toHaveValue('');
+  await go(app, 'O892'); await expect(cell(app, 'O892')).toHaveValue('True');
+  await expect(app.getByRole('status')).toHaveText('✓ Сохранено локально');
+  await page.reload();
+  await expect(app.getByRole('button', { name: 'Titanic', exact: true })).toHaveCount(1);
+  await expect(app.getByRole('button', { name: 'Penguins', exact: true })).toHaveCount(1);
+  await expect(cell(app, 'O892')).toHaveValue('True');
+  await app.getByRole('button', { name: 'Penguins', exact: true }).click();
+  await go(app, 'C2'); await expect(cell(app, 'C2')).toHaveValue('55');
+  await app.getByRole('button', { name: 'Сбросить лист' }).click();
+  await expect(cell(app, 'C2')).toHaveValue('39.1');
+  await expect(app.getByRole('spinbutton', { name: 'Число строк' })).toHaveValue('345');
+  expect(errors).toEqual([]);
+});
+
+test('existing browser workbook gains sample sheets without replacing user data', async ({ page }) => {
+  await page.addInitScript(() => {
+    if (localStorage.getItem('jotai-rust/spreadsheet/v1')) return;
+    localStorage.setItem('jotai-rust/spreadsheet/v1', JSON.stringify({
+      version: 1, active: 3,
+      sheets: [{ id: 3, name: 'Моя таблица', document: { rows: 100, columns: 40, cells: { A1: 'Мои данные' } }, selected: { row: 1, column: 1 }, top: 1, left: 1 }],
+    }));
+  });
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto('examples/spreadsheet.html');
+  const app = page.frameLocator('iframe');
+  await expect(app.getByRole('heading', { level: 1 })).toHaveText('Моя таблица');
+  await expect(cell(app, 'A1')).toHaveValue('Мои данные');
+  await expect(app.getByRole('button', { name: 'Penguins', exact: true })).toHaveCount(1);
+  await expect(app.getByRole('button', { name: 'Titanic', exact: true })).toHaveCount(1);
+  await page.reload();
+  await expect(cell(app, 'A1')).toHaveValue('Мои данные');
+  await expect(app.getByRole('button', { name: 'Penguins', exact: true })).toHaveCount(1);
+  await expect(app.getByRole('button', { name: 'Titanic', exact: true })).toHaveCount(1);
   expect(errors).toEqual([]);
 });

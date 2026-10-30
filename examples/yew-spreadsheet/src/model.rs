@@ -1,5 +1,6 @@
 use crate::{
     coordinates::{Address, Dimensions, MAX_DIMENSION, WINDOW_COLUMNS, WINDOW_ROWS},
+    datasets::{self, Dataset},
     formulas::{self, Error, Expr, Value},
 };
 use jotai::{Atom, Store, WritableAtom, atom, derived};
@@ -10,6 +11,8 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     rc::Rc,
 };
+
+pub const MAX_FILLED_CELLS: usize = 20_000;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Document {
@@ -33,9 +36,9 @@ impl Document {
             columns: self.columns,
         }
     }
-    fn validate(&self) -> bool {
+    pub(crate) fn validate(&self) -> bool {
         self.dimensions().valid()
-            && self.cells.len() <= 20_000
+            && self.cells.len() <= MAX_FILLED_CELLS
             && self.cells.iter().all(|(key, value)| {
                 key.parse::<Address>().is_ok_and(|a| {
                     (1..=MAX_DIMENSION).contains(&a.row) && (1..=MAX_DIMENSION).contains(&a.column)
@@ -105,6 +108,7 @@ pub struct CellModel {
 }
 struct SheetInner {
     initial: Document,
+    reset: Document,
     cells: RefCell<BTreeMap<Address, CellModel>>,
     pub document: WritableAtom<Document>,
     pub dimensions: WritableAtom<Dimensions>,
@@ -145,6 +149,19 @@ pub enum Command {
 
 impl Sheet {
     pub fn new(document: Document, changed: Event<SaveMode>, gift: bool) -> Self {
+        let reset = if gift {
+            gift_document()
+        } else {
+            Document::default()
+        };
+        Self::with_reset(document, changed, gift, reset)
+    }
+    fn with_reset(
+        document: Document,
+        changed: Event<SaveMode>,
+        gift: bool,
+        reset: Document,
+    ) -> Self {
         let mut editor = Editor::default();
         if gift {
             editor.selected = Address::new(5, 4);
@@ -154,6 +171,7 @@ impl Sheet {
             dimensions: atom(document.dimensions()),
             document: atom(document.clone()),
             initial: document.clone(),
+            reset,
             cells: RefCell::default(),
             issues: atom(topology_issues(&document, |address| {
                 formulas::parse(&document.cells[&address.to_string()])
@@ -179,6 +197,9 @@ impl Sheet {
     }
     pub fn notice(&self) -> &WritableAtom<String> {
         &self.0.notice
+    }
+    pub fn is_gift(&self) -> bool {
+        self.0.gift
     }
 
     // #region spreadsheet-cell
@@ -394,11 +415,7 @@ impl Sheet {
         }
     }
     fn reset(&self, store: &Store) {
-        let doc = if self.0.gift {
-            gift_document()
-        } else {
-            Document::default()
-        };
+        let doc = self.0.reset.clone();
         let addresses: Vec<_> = self.0.cells.borrow().keys().copied().collect();
         for address in addresses {
             store.set(
@@ -436,12 +453,15 @@ impl Sheet {
 pub struct SheetEntry {
     pub id: u64,
     pub name: String,
+    pub dataset: Option<Dataset>,
     pub sheet: Sheet,
 }
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct SavedSheet {
     pub id: u64,
     pub name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dataset: Option<Dataset>,
     pub document: Document,
     pub selected: Address,
     pub top: usize,
@@ -483,7 +503,7 @@ pub struct Book {
 impl Book {
     pub fn new(store: &Store, snapshot: Option<Snapshot>) -> Self {
         let changed = Event::new();
-        let snapshot = snapshot
+        let mut snapshot = snapshot
             .filter(Snapshot::valid)
             .unwrap_or_else(|| Snapshot {
                 version: 1,
@@ -492,6 +512,7 @@ impl Book {
                     SavedSheet {
                         id: 1,
                         name: "Бюджет подарков".into(),
+                        dataset: None,
                         document: gift_document(),
                         selected: Address::new(5, 4),
                         top: 1,
@@ -500,6 +521,7 @@ impl Book {
                     SavedSheet {
                         id: 2,
                         name: "Черновик".into(),
+                        dataset: None,
                         document: Document::default(),
                         selected: Address::new(1, 1),
                         top: 1,
@@ -507,11 +529,16 @@ impl Book {
                     },
                 ],
             });
+        datasets::append_missing(&mut snapshot);
         let entries: Vec<SheetEntry> = snapshot
             .sheets
             .into_iter()
             .map(|saved| {
-                let sheet = Sheet::new(saved.document, changed.clone(), saved.id == 1);
+                let sheet = if let Some(dataset) = saved.dataset {
+                    Sheet::with_reset(saved.document, changed.clone(), false, dataset.document())
+                } else {
+                    Sheet::new(saved.document, changed.clone(), saved.id == 1)
+                };
                 let mut editor = Editor {
                     selected: saved.selected,
                     top: saved.top,
@@ -524,6 +551,7 @@ impl Book {
                 SheetEntry {
                     id: saved.id,
                     name: saved.name,
+                    dataset: saved.dataset,
                     sheet,
                 }
             })
@@ -579,6 +607,7 @@ impl Book {
                 entries.push(SheetEntry {
                     id,
                     name: format!("Лист {id}"),
+                    dataset: None,
                     sheet: Sheet::new(Document::default(), self.changed.clone(), false),
                 });
                 entries
@@ -619,6 +648,7 @@ impl Book {
                     SavedSheet {
                         id: entry.id,
                         name: entry.name.clone(),
+                        dataset: entry.dataset,
                         document: store.get(entry.sheet.document()),
                         selected: editor.selected,
                         top: editor.top,

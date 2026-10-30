@@ -45,10 +45,18 @@ impl Session {
             Ok(Some(snapshot))
         })();
         let book = Rc::new(Book::new(&store, restored.clone().ok().flatten()));
-        if let Err(error) = restored {
-            store.set(&book.status, SaveStatus::Failed(error));
+        let session = Self { store, book };
+        match restored {
+            Err(error) => session
+                .store
+                .set(&session.book.status, SaveStatus::Failed(error)),
+            Ok(previous) => {
+                if previous.as_ref() != Some(&session.book.snapshot(&session.store)) {
+                    session.save();
+                }
+            }
         }
-        Self { store, book }
+        session
     }
     fn save(&self) {
         let result = (|| -> Result<(), String> {
@@ -157,7 +165,7 @@ fn Workbook(props: &WorkbookProps) -> Html {
     html! {
         <main class="workbook">
             <header class="book-heading">
-                <div><div class="eyebrow">{"РАБОЧАЯ КНИГА"}</div><h1>{"Бюджет подарков"}</h1></div>
+                <div><div class="eyebrow">{"РАБОЧАЯ КНИГА"}</div><h1>{active.name.clone()}</h1></div>
                 <SaveIndicator session={session.clone()} />
             </header>
             <p class="intro">{"Меняйте значения и формулы — связанные ячейки пересчитаются."}</p>
@@ -680,25 +688,40 @@ struct Summary {
     total: Value,
     top: usize,
     left: usize,
+    dimensions: Dimensions,
 }
 #[component]
 fn SheetSummary(props: &SheetProps) -> Html {
     let binding = use_memo(props.clone(), |props| {
         let camera = ion(props.sheet.editor(), |editor| (editor.top, editor.left));
-        Holo::new(|| Summary {
+        let binding = Holo::new(|| Summary {
             total: Value::Blank,
             top: 1,
             left: 1,
+            dimensions: Dimensions::default(),
         })
-        .read(
-            &props.sheet.cell(Address::new(5, 4)).value,
-            |props, value| props.total = value,
-        )
+        .read(props.sheet.dimensions(), |props, value| {
+            props.dimensions = value
+        })
         .read(&camera, |props, (top, left)| {
             props.top = top;
             props.left = left;
-        })
+        });
+        if props.sheet.is_gift() {
+            binding.read(
+                &props.sheet.cell(Address::new(5, 4)).value,
+                |props, value| props.total = value,
+            )
+        } else {
+            binding
+        }
     });
     let summary = use_holo((*binding).clone(), props.store.clone());
-    html! { <div class="sheet-summary"><span>{format!("Окно от {}{}",column_name(summary.left),summary.top)}</span><span>{"D5 · Итого "}<strong class="bundle-total">{summary.total.display()}</strong></span></div> }
+    html! { <div class="sheet-summary"><span>{format!("Окно от {}{}",column_name(summary.left),summary.top)}</span>
+        if props.sheet.is_gift() {
+            <span>{"D5 · Итого "}<strong class="bundle-total">{summary.total.display()}</strong></span>
+        } else {
+            <span>{format!("{} строк × {} столбцов", summary.dimensions.rows, summary.dimensions.columns)}</span>
+        }
+    </div> }
 }
