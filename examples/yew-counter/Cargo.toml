@@ -1,0 +1,12 @@
+[package]
+name = "yew-counter"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+jotai.workspace = true
+jotai-holo.workspace = true
+jotai-holo-yew.workspace = true
+yew.workspace = true

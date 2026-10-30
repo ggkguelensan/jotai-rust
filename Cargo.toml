@@ -1,0 +1,15 @@
+[workspace]
+members = ["crates/*", "examples/yew-counter"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[workspace.dependencies]
+jotai = { path = "crates/jotai" }
+jotai-holo = { path = "crates/jotai-holo" }
+jotai-holo-yew = { path = "crates/jotai-holo-yew" }
+yew = { version = "0.23", features = ["csr"] }
